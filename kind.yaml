@@ -1,0 +1,9 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: llama-stack
+nodes:
+  - role: control-plane
+    extraMounts:
+    - hostPath: /Users/ellistarn/.ollama
+      containerPath: /.ollama
+    # memory: 8192
