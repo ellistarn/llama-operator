@@ -9,23 +9,32 @@ Kubernetes operator for deploying Llama applications
 
 Termainal 1: Create a cluster, deploy llama, and tail logs
 ```sh
-kind create cluster --name llama
+kind create cluster --config ./kind.yaml
+# Hack to speed up image pull time for kind (~10gb)
+kind load docker-image alpine/ollama:latest --name llama
+kind load docker-image llamastack/distribution-ollama:latest --name llama
 kubectl apply -f manifest
 # Slow networks may take a few minutes to pull the 6GB image
-kubectl wait deployment llama --for condition=Available=True --timeout=240s
+kubectl wait deployment llama-stack --for condition=Available=True --timeout=240s
 kubectl logs -f -l app.kubernetes.io/name=llama
 ```
 
 Terminal 2: Connect to the cluster
 ```sh
-kubectl port-forward deployment/llama 8080:11434
+kubectl port-forward svc/llama-stack 8080:80
 ```
 
-Terminal 3: Talk to Llama
+Terminal 3: Talk to Llama Stack
 ```sh
-curl -s http://localhost:11434/api/generate -d '{
-  "model": "tinyllama",
-  "prompt": "Is Kubernetes the best way to deploy Llama?",
-  "stream": false
-}' | jq -r ".response"
+llama-stack-client configure --endpoint http://localhost:8080
+llama-stack-client models list
+llama-stack-client inference chat-completion --message "Hello, what model are you?"
 ```
+
+# Roadblocks and Solutions
+
+1. Tinyllama isn't supported by llama-stack's ollama distribution. Why is the set of models limited and not discovered?
+1. Image/model pulling happens on restart, and needs to be optimized (10gb+).
+1. Ollama image is huge and slow to pull, use alipine/ollama instead
+1. Can't easily mount gpu device into kind (maybe https://www.substratus.ai/blog/kind-with-gpus?)
+1. On cpu, kind maxes out at 8GB, so you can't run llama llama3.2:3b-instruct-fp16, try 1b instead
