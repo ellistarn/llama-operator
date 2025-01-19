@@ -1,23 +1,88 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: llama
+  name: ollama
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: llama
+      app.kubernetes.io/name: ollama
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: llama
+        app.kubernetes.io/name: ollama
     spec:
       containers:
       - name: serve
-        image: ollama/ollama:latest
+        image: alpine/ollama:latest # Perf hack since ollama was 9gb, replace with ollama/ollama:latest
+        imagePullPolicy: IfNotPresent # Perf hack since image is unversioned (for now), requires :latest
+        env:
+        - name: OLLAMA_KEEP_ALIVE
+          value: "-1"
+        volumeMounts:
+        - mountPath: /root/.ollama
+          name: ollama-volume
         ports:
         - containerPort: 11434
         lifecycle:
           postStart:
             exec:
-              command: ["/bin/sh", "-c", "ollama run tinyllama"]
+              command: ["/bin/sh", "-c", "ollama run llama3.2:1b-instruct-fp16"]
+      volumes:
+      - name: ollama-volume
+        hostPath:
+          path: /.ollama
+          type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: ollama
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 11434
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llama-stack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: llama-stack
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: llama-stack
+    spec:
+      containers:
+      - name: serve
+        image: llamastack/distribution-ollama:latest
+        imagePullPolicy: IfNotPresent # Perf hack since image is unversioned (for now), requires :latest
+        env:
+        - name: INFERENCE_MODEL
+          value: "meta-llama/Llama-3.2-1B-Instruct"
+        - name: OLLAMA_URL
+          value: "http://ollama.default.svc.cluster.local"
+        ports:
+        - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llama-stack
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: llama-stack
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
