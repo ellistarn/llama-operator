@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: llama
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: llama
+    spec:
+      containers:
+      - name: serve
+        image: ollama/ollama:latest
+        ports:
+        - containerPort: 11434
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c", "ollama run tinyllama"]
