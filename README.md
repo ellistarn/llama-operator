@@ -8,19 +8,14 @@ Kubernetes operator for deploying Llama applications
 
 # Getting Started
 
-Bootstrap your system to make it ready to develop.
-
-```sh
-mkdir -p .ollama
-docker pull alpine/ollama:latest
-docker pull llamastack/distribution-ollama:latest
-```
-
 Termainal 1: Create a cluster, deploy llama, and tail logs
 
 ```sh
+mkdir -p .ollama
 kind create cluster --config ./kind.yaml
 # Hack to speed up image pull time for kind (~10gb)
+docker pull alpine/ollama:latest
+docker pull llamastack/distribution-ollama:latest
 kind load docker-image alpine/ollama:latest --name llama-stack
 kind load docker-image llamastack/distribution-ollama:latest --name llama-stack
 kubectl apply -f manifest
