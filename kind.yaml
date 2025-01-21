@@ -4,6 +4,6 @@ name: llama-stack
 nodes:
   - role: control-plane
     extraMounts:
-    - hostPath: /Users/ellistarn/.ollama
+    - hostPath: .ollama
       containerPath: /.ollama
     # memory: 8192

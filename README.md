@@ -4,19 +4,24 @@ Kubernetes operator for deploying Llama applications
 # Tools
 * Kind (`brew install kind`)
 * Kubectl (`brew install kubectl`)
+* Docker
 
 # Getting Started
 
 Termainal 1: Create a cluster, deploy llama, and tail logs
+
 ```sh
+mkdir -p .ollama
 kind create cluster --config ./kind.yaml
 # Hack to speed up image pull time for kind (~10gb)
-kind load docker-image alpine/ollama:latest --name llama
-kind load docker-image llamastack/distribution-ollama:latest --name llama
+docker pull alpine/ollama:latest
+docker pull llamastack/distribution-ollama:latest
+kind load docker-image alpine/ollama:latest --name llama-stack
+kind load docker-image llamastack/distribution-ollama:latest --name llama-stack
 kubectl apply -f manifest
 # Slow networks may take a few minutes to pull the 6GB image
 kubectl wait deployment llama-stack --for condition=Available=True --timeout=240s
-kubectl logs -f -l app.kubernetes.io/name=llama
+kubectl logs -f -l app.kubernetes.io/name=llama-stack
 ```
 
 Terminal 2: Connect to the cluster
